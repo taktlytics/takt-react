@@ -38,6 +38,24 @@ describe('<Takt>', () => {
     expect(createTakt).toHaveBeenCalledWith(expect.objectContaining({ debug: true }))
   })
 
+  it('forwards redactRoutes and routeTemplates to createTakt', () => {
+    render(<Takt redactRoutes={['/verify/[token]']} routeTemplates>x</Takt>)
+    expect(createTakt).toHaveBeenCalledWith(
+      expect.objectContaining({ redactRoutes: ['/verify/[token]'], routeTemplates: true }),
+    )
+  })
+
+  it('resolves routeTemplate through the latest prop after a rerender', () => {
+    const { rerender } = render(<Takt routeTemplates routeTemplate={() => '/first/:id'}>x</Takt>)
+    const config = (createTakt.mock.calls[0] as unknown as [{ routeTemplate: () => string | null | undefined }])[0]
+    expect(config.routeTemplate()).toBe('/first/:id')
+    rerender(<Takt routeTemplates routeTemplate={() => '/second/:id'}>x</Takt>)
+    expect(createTakt).toHaveBeenCalledOnce()
+    expect(config.routeTemplate()).toBe('/second/:id')
+    rerender(<Takt routeTemplates>x</Takt>)
+    expect(config.routeTemplate()).toBeUndefined()
+  })
+
   it('forwards scriptOrigin to createTakt', () => {
     render(<Takt scriptOrigin="https://t.example.com">x</Takt>)
     expect(createTakt).toHaveBeenCalledWith(

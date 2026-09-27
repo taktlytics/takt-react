@@ -37,6 +37,25 @@ describe('<takt-analytics> element', () => {
     el.remove()
   })
 
+  it('parses redact-routes as a comma-separated list', () => {
+    defineTaktElement()
+    const el = document.createElement('takt-analytics')
+    el.setAttribute('redact-routes', '/verify/[token], /reset/:code ,')
+    document.body.appendChild(el)
+    expect(createTakt).toHaveBeenCalledWith(
+      expect.objectContaining({ redactRoutes: ['/verify/[token]', '/reset/:code'] }),
+    )
+    el.remove()
+  })
+
+  it('omits redactRoutes when the attribute is absent', () => {
+    defineTaktElement()
+    const el = document.createElement('takt-analytics')
+    document.body.appendChild(el)
+    expect(createTakt).toHaveBeenCalledWith(expect.not.objectContaining({ redactRoutes: expect.anything() }))
+    el.remove()
+  })
+
   it('forwards script-origin to the core', () => {
     defineTaktElement()
     const el = document.createElement('takt-analytics')
