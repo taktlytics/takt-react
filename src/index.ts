@@ -4,6 +4,7 @@ export { useTaktEvent, type TaktEventParams } from './useTaktEvent'
 export { TaktEvent } from './TaktEvent'
 export { TaktBadge, type TaktBadgeProps } from './TaktBadge'
 export { TaktEmbed, type TaktEmbedProps } from './TaktEmbed'
+export { reactRouterTemplate, type ReactRouterLike } from './reactRouterTemplate'
 export type { TaktInstance } from './store'
 export type { Config } from '@vskstudio/takt-core'
 

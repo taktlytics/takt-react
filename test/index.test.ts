@@ -12,5 +12,6 @@ describe('public API surface', () => {
     expect(typeof api.optOut).toBe('function')
     expect(typeof api.optIn).toBe('function')
     expect(typeof api.isOptedOut).toBe('function')
+    expect(typeof api.reactRouterTemplate).toBe('function')
   })
 })
