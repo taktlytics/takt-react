@@ -35,6 +35,9 @@ export interface TaktProps {
   exclude?: string[]
   /** Transform the URL before it is sent; dev-controlled — never build from user input. */
   scrubUrl?: (url: string) => string
+  redactRoutes?: string[]
+  routeTemplates?: boolean
+  routeTemplate?: () => string | null | undefined
   /** Auto-track `[data-takt-event]` clicks; `data-takt-prop-*` attributes become props. */
   tagged?: boolean
   debug?: boolean
@@ -57,14 +60,17 @@ export function Takt({
   queryParams,
   exclude,
   scrubUrl,
+  redactRoutes,
+  routeTemplates,
+  routeTemplate,
   tagged = false,
   debug = false,
   children,
 }: TaktProps) {
   const [instance, setInstance] = useState<TaktInstance | null>(null)
   // Read the latest props inside the mount effect without re-running it.
-  const props = useRef({ domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, tagged, debug })
-  props.current = { domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, tagged, debug }
+  const props = useRef({ domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, redactRoutes, routeTemplates, routeTemplate, tagged, debug })
+  props.current = { domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, redactRoutes, routeTemplates, routeTemplate, tagged, debug }
   // Survives StrictMode's setup→cleanup→setup, so the remount boot can tell it
   // is the same component and skip a duplicate initial pageview.
   const didPageview = useRef(false)
@@ -83,6 +89,9 @@ export function Takt({
       queryParams: p.queryParams,
       exclude: p.exclude,
       scrubUrl: p.scrubUrl,
+      redactRoutes: p.redactRoutes,
+      routeTemplates: p.routeTemplates,
+      routeTemplate: () => props.current.routeTemplate?.(),
       debug: p.debug,
     })
     const disposers: Array<() => void> = []
