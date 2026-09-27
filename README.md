@@ -89,10 +89,13 @@ export function SignupButton() {
 | `queryParams`      | `string[]`                | —                    | Allowlist applied when `trackQuery` is off: keep only these query params, drop the rest. |
 | `exclude`          | `string[]`                | —                    | Path prefixes never tracked, e.g. `['/app', '/account']` (segment-bounded, checked at send time). |
 | `scrubUrl`         | `(url: string) => string` | —                    | Transform the URL before it is sent (page, referrer, and the `url` prop of outbound-link and file-download events). **Component prop only** — cannot be set as a custom-element attribute. Must be a developer-controlled function; never build it from user input. |
+| `redactRoutes`     | `string[]`                | —                    | Sensitive route patterns: a matching path is sent as the pattern, e.g. `['/verify/[token]', '/reset/:code']`. See [Route redaction](#route-redaction). |
+| `routeTemplates`   | `boolean`                 | `false`              | Send every page as its route template instead of the real path. Needs `routeTemplate`. |
+| `routeTemplate`    | `() => string \| null`    | —                    | Returns the current route template, e.g. `reactRouterTemplate(router)`. Used when `routeTemplates` is on. **Component prop only.** |
 | `tagged`           | `boolean`                 | `false`              | Auto-track clicks on `[data-takt-event]` elements; `data-takt-prop-*` attributes become event props. |
 | `debug`            | `boolean`                 | `false`              | Log each payload to the console before sending. |
 
-> Config props are read once when `<Takt>` mounts. Changing them afterwards has no effect — remount the component to reconfigure.
+> Config props are read once when `<Takt>` mounts. Changing them afterwards has no effect, so remount the component to reconfigure. The one exception is `routeTemplate`: `<Takt>` always calls the function from the latest render.
 
 `<Takt>` also unwires everything it enabled on unmount (SPA, outbound, files, 404, tagged), and de-duplicates the initial pageview across React StrictMode's double mount.
 
@@ -149,6 +152,7 @@ import '@vskstudio/takt-react/element'
 | `sample-rate`       | value    | `sampleRate`       | Parsed as a float; ignored if not finite.                       |
 | `query-params`      | value    | `queryParams`      | Comma-separated list, e.g. `query-params="utm_source,ref"`.     |
 | `exclude`           | value    | `exclude`          | Comma-separated list of path prefixes.                          |
+| `redact-routes`     | value    | `redactRoutes`     | Comma-separated list of route patterns, e.g. `redact-routes="/verify/[token],/reset/:code"`. |
 | `respect-dnt`       | boolean  | `respectDnt`       | On by default; only `"false"`/`"0"` disables it.                |
 | `exclude-localhost` | boolean  | `excludeLocalhost` | On by default; only `"false"`/`"0"` disables it.                |
 | `spa`               | boolean  | `spa`              | On by default; only `"false"`/`"0"` disables it.                |
@@ -159,7 +163,7 @@ import '@vskstudio/takt-react/element'
 | `tagged`            | presence | `tagged`           | Autocapture of `[data-takt-event]` clicks.                      |
 | `debug`             | boolean  | `debug`            | Only read when the attribute is present; logs each payload.     |
 
-The element fires a pageview on `connectedCallback` and disposes every listener it added on `disconnectedCallback`. Two `<Takt>` props have no attribute equivalent: `scrubUrl` (a function) and `track404`.
+The element fires a pageview on `connectedCallback` and disposes every listener it added on `disconnectedCallback`. Some `<Takt>` props have no attribute equivalent: `scrubUrl` (a function), `track404`, and `routeTemplates` / `routeTemplate` (the element has no router).
 
 ## Widgets
 
@@ -198,14 +202,56 @@ try {
 }
 ```
 
+## Route redaction
+
+Query strings are stripped by default, but path segments are sent as they are: `/verify/abc123` leaks the token. List the sensitive routes in `redactRoutes` and a matching path is sent as the pattern, while every other page keeps its real path. Patterns accept `[param]`, `[[optional]]`, `[...rest]`, `(group)`, `:param`, `:param?`, `*` and `**`. The rule covers the page URL, same-origin referrers, outbound and download links, and 404 paths.
+
+```tsx
+<Takt redactRoutes={['/verify/[token]', '/reset/:code', '/invoices/:id']}>
+  <App />
+</Takt>
+```
+
+This is the recommended setup for Next.js: the App Router exposes no route template on the client, so list the dynamic routes that carry secrets, using the same `[param]` names as your `app/` folders.
+
+`routeTemplates` sends every page as its route template, so `/users/42` becomes `/users/:id`. It suits fully private apps; on a public site it merges every article into one row. Takt needs to know the matched route, which it reads from `routeTemplate`. With a React Router data router (`createBrowserRouter`), pass `reactRouterTemplate(router)`:
+
+```tsx
+import { RouterProvider, createBrowserRouter } from 'react-router'
+import { Takt, reactRouterTemplate } from '@vskstudio/takt-react'
+
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Layout />,
+    children: [
+      { index: true, element: <Home /> },
+      { path: 'users/:id', element: <User /> },
+      { path: 'docs/*', element: <Docs /> },
+    ],
+  },
+])
+
+export function App() {
+  return (
+    <Takt routeTemplates routeTemplate={() => reactRouterTemplate(router)}>
+      <RouterProvider router={router} />
+    </Takt>
+  )
+}
+```
+
+`reactRouterTemplate` joins the `path` of every matched route (`/users/:id`, `/docs/*`), skips index and layout routes without a `path`, and returns `null` when nothing matches. When the resolver returns nothing, `redactRoutes` still applies and the real path is sent otherwise. It reads `router.state.matches` only, so it adds no dependency on `react-router`.
+
 ## Public exports
 
 From the main entry:
 
 - Components: `Takt`, `TaktEvent`, `TaktBadge`, `TaktEmbed`
 - Hooks: `useTakt`, `useTaktEvent`
+- Router helper: `reactRouterTemplate`
 - Re-exported from core: `badgeUrl`, `embedUrl`, `createStats`, `PublicApiError`, `optOut`, `optIn`, `isOptedOut`
-- Types: `TaktProps`, `TaktEventParams`, `TaktBadgeProps`, `TaktEmbedProps`, `TaktInstance`, plus `Config`, `BadgeOptions`, `EmbedOptions`, `BadgeVariant`, `BadgeGlyph`, `EmbedTheme`, `WidgetLang`, `StatsClient`, `StatsClientOptions`, `StatsParams`, `StatsPeriod`, `StatsDimension`, `StatsMetrics`, `StatsSummary`, `StatsPoint`, `StatsTimeseries`, `StatsBreakdownRow`, `StatsBreakdown`, `StatsRealtime` re-exported from core
+- Types: `TaktProps`, `TaktEventParams`, `ReactRouterLike`, `TaktBadgeProps`, `TaktEmbedProps`, `TaktInstance`, plus `Config`, `BadgeOptions`, `EmbedOptions`, `BadgeVariant`, `BadgeGlyph`, `EmbedTheme`, `WidgetLang`, `StatsClient`, `StatsClientOptions`, `StatsParams`, `StatsPeriod`, `StatsDimension`, `StatsMetrics`, `StatsSummary`, `StatsPoint`, `StatsTimeseries`, `StatsBreakdownRow`, `StatsBreakdown`, `StatsRealtime` re-exported from core
 
 From `@vskstudio/takt-react/element`: `defineTaktElement()`. Importing the subpath already calls it — the named export is there for explicit or repeated registration (it is idempotent).
 
