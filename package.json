@@ -17,13 +17,13 @@
     "react",
     "takt"
   ],
-  "homepage": "https://github.com/vskstudio/takt-react#readme",
+  "homepage": "https://github.com/taktlytics/takt-react#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vskstudio/takt-react.git"
+    "url": "git+https://github.com/taktlytics/takt-react.git"
   },
   "bugs": {
-    "url": "https://github.com/vskstudio/takt-react/issues"
+    "url": "https://github.com/taktlytics/takt-react/issues"
   },
   "publishConfig": {
     "access": "public"
