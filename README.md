@@ -220,6 +220,7 @@ All privacy behavior lives in [`@vskstudio/takt-core`](https://www.npmjs.com/pac
 Consent works before `<Takt>` has mounted: `useTakt().optOut()`, `useTakt().optIn()` and `useTakt().isOptedOut()` go straight to the stored choice, and so do the `optOut`, `optIn` and `isOptedOut` functions exported by the package. A consent banner can therefore render first, and the instance created later honours the choice.
 
 ```tsx
+import { useState } from 'react'
 import { isOptedOut, optIn, optOut } from '@vskstudio/takt-react'
 
 function AnalyticsToggle() {
