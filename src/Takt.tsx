@@ -37,6 +37,7 @@ export interface TaktProps {
   scrubUrl?: (url: string) => string
   /** Auto-track `[data-takt-event]` clicks; `data-takt-prop-*` attributes become props. */
   tagged?: boolean
+  debug?: boolean
   children?: ReactNode
 }
 
@@ -57,12 +58,13 @@ export function Takt({
   exclude,
   scrubUrl,
   tagged = false,
+  debug = false,
   children,
 }: TaktProps) {
   const [instance, setInstance] = useState<TaktInstance | null>(null)
   // Read the latest props inside the mount effect without re-running it.
-  const props = useRef({ domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, tagged })
-  props.current = { domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, tagged }
+  const props = useRef({ domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, tagged, debug })
+  props.current = { domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, tagged, debug }
   // Survives StrictMode's setup→cleanup→setup, so the remount boot can tell it
   // is the same component and skip a duplicate initial pageview.
   const didPageview = useRef(false)
@@ -81,6 +83,7 @@ export function Takt({
       queryParams: p.queryParams,
       exclude: p.exclude,
       scrubUrl: p.scrubUrl,
+      debug: p.debug,
     })
     const disposers: Array<() => void> = []
     if (p.spa) disposers.push(takt.enableSpa())
