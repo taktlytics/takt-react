@@ -88,8 +88,9 @@ export function SignupButton() {
 | `trackQuery`       | `boolean`                 | `false`              | Keep the full query string and hash on URLs. Wins over `queryParams`. |
 | `queryParams`      | `string[]`                | —                    | Allowlist applied when `trackQuery` is off: keep only these query params, drop the rest. |
 | `exclude`          | `string[]`                | —                    | Path prefixes never tracked, e.g. `['/app', '/account']` (segment-bounded, checked at send time). |
-| `scrubUrl`         | `(url: string) => string` | —                    | Transform the URL before it is sent. **Component prop only** — cannot be set as a custom-element attribute. Must be a developer-controlled function; never build it from user input. |
+| `scrubUrl`         | `(url: string) => string` | —                    | Transform the URL before it is sent (page, referrer, and the `url` prop of outbound-link and file-download events). **Component prop only** — cannot be set as a custom-element attribute. Must be a developer-controlled function; never build it from user input. |
 | `tagged`           | `boolean`                 | `false`              | Auto-track clicks on `[data-takt-event]` elements; `data-takt-prop-*` attributes become event props. |
+| `debug`            | `boolean`                 | `false`              | Log each payload to the console before sending. |
 
 > Config props are read once when `<Takt>` mounts. Changing them afterwards has no effect — remount the component to reconfigure.
 
@@ -156,6 +157,7 @@ import '@vskstudio/takt-react/element'
 | `outbound`          | presence | `outbound`         | Active as soon as the attribute exists.                         |
 | `files`             | presence | `files`            | Active as soon as the attribute exists; extensions cannot be restricted from an attribute. |
 | `tagged`            | presence | `tagged`           | Autocapture of `[data-takt-event]` clicks.                      |
+| `debug`             | boolean  | `debug`            | Only read when the attribute is present; logs each payload.     |
 
 The element fires a pageview on `connectedCallback` and disposes every listener it added on `disconnectedCallback`. Two `<Takt>` props have no attribute equivalent: `scrubUrl` (a function) and `track404`.
 
@@ -202,7 +204,7 @@ From the main entry:
 
 - Components: `Takt`, `TaktEvent`, `TaktBadge`, `TaktEmbed`
 - Hooks: `useTakt`, `useTaktEvent`
-- Re-exported from core: `badgeUrl`, `embedUrl`, `createStats`, `PublicApiError`
+- Re-exported from core: `badgeUrl`, `embedUrl`, `createStats`, `PublicApiError`, `optOut`, `optIn`, `isOptedOut`
 - Types: `TaktProps`, `TaktEventParams`, `TaktBadgeProps`, `TaktEmbedProps`, `TaktInstance`, plus `Config`, `BadgeOptions`, `EmbedOptions`, `BadgeVariant`, `BadgeGlyph`, `EmbedTheme`, `WidgetLang`, `StatsClient`, `StatsClientOptions`, `StatsParams`, `StatsPeriod`, `StatsDimension`, `StatsMetrics`, `StatsSummary`, `StatsPoint`, `StatsTimeseries`, `StatsBreakdownRow`, `StatsBreakdown`, `StatsRealtime` re-exported from core
 
 From `@vskstudio/takt-react/element`: `defineTaktElement()`. Importing the subpath already calls it — the named export is there for explicit or repeated registration (it is idempotent).
@@ -214,6 +216,22 @@ The main entry ships with a built-in `'use client'` banner, and `<Takt>` boots i
 ## Privacy
 
 All privacy behavior lives in [`@vskstudio/takt-core`](https://www.npmjs.com/package/@vskstudio/takt-core): Do Not Track support, localhost exclusion, opt-in/opt-out consent, and a frozen wire payload. This wrapper never alters any of it.
+
+Consent works before `<Takt>` has mounted: `useTakt().optOut()`, `useTakt().optIn()` and `useTakt().isOptedOut()` go straight to the stored choice, and so do the `optOut`, `optIn` and `isOptedOut` functions exported by the package. A consent banner can therefore render first, and the instance created later honours the choice.
+
+```tsx
+import { useState } from 'react'
+import { isOptedOut, optIn, optOut } from '@vskstudio/takt-react'
+
+function AnalyticsToggle() {
+  const [blocked, setBlocked] = useState(isOptedOut)
+  const toggle = () => {
+    blocked ? optIn() : optOut()
+    setBlocked(isOptedOut())
+  }
+  return <button onClick={toggle}>{blocked ? 'Enable analytics' : 'Disable analytics'}</button>
+}
+```
 
 ## License
 

@@ -7,7 +7,7 @@ export { TaktEmbed, type TaktEmbedProps } from './TaktEmbed'
 export type { TaktInstance } from './store'
 export type { Config } from '@vskstudio/takt-core'
 
-export { badgeUrl, embedUrl, createStats, PublicApiError } from '@vskstudio/takt-core'
+export { badgeUrl, embedUrl, createStats, PublicApiError, optOut, optIn, isOptedOut } from '@vskstudio/takt-core'
 export type {
   BadgeOptions,
   EmbedOptions,
