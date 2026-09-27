@@ -1,5 +1,11 @@
 # @vskstudio/takt-react
 
+## 0.8.0
+
+### Minor Changes
+
+- d346934: New `redactRoutes`, `routeTemplates` and `routeTemplate` props on `<Takt>`, forwarded to core, and a `redact-routes` attribute on `<takt-analytics>`. `routeTemplate` is always read from the latest render. The new `reactRouterTemplate(router)` helper resolves the matched route template of a React Router data router (`createBrowserRouter`) without depending on `react-router`. Requires `@vskstudio/takt-core` 0.10.0.
+
 ## 0.7.0
 
 ### Minor Changes
