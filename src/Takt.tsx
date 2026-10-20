@@ -23,9 +23,9 @@ export interface TaktProps {
   respectDnt?: boolean
   /** Suppress events on localhost and private IP ranges. */
   excludeLocalhost?: boolean
-  /** Master on/off switch — set to `false` to disable all tracking at runtime. */
+  /** Master on/off switch: set to `false` to disable all tracking at runtime. */
   enabled?: boolean
-  /** Fraction of sessions to track (0–1). */
+  /** Fraction of sessions to track (0 to 1). */
   sampleRate?: number
   /** Keep the full query string and hash on URLs. Wins over `queryParams`. */
   trackQuery?: boolean
@@ -33,7 +33,7 @@ export interface TaktProps {
   queryParams?: string[]
   /** Path prefixes never tracked, e.g. ['/app','/account']. Segment-bounded: '/app' matches '/app' and '/app/…' but not '/application'. */
   exclude?: string[]
-  /** Transform the URL before it is sent; dev-controlled — never build from user input. */
+  /** Transform the URL before it is sent; dev-controlled. Never build from user input. */
   scrubUrl?: (url: string) => string
   redactRoutes?: string[]
   routeTemplates?: boolean

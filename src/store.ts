@@ -9,12 +9,12 @@ export const TaktContext = createContext<TaktInstance | null>(null)
 
 export const taktStore: { value: TaktInstance | null } = { value: null }
 
-// Hook form — must be called during render. Prefers the provider's instance.
+// Hook form. Must be called during render. Prefers the provider's instance.
 export function useResolveTakt(): TaktInstance | null {
   return useContext(TaktContext) ?? taktStore.value
 }
 
-// Non-hook form — safe to call at click time / outside React.
+// Non-hook form. Safe to call at click time / outside React.
 export function resolveTakt(): TaktInstance | null {
   return taktStore.value
 }
