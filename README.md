@@ -28,7 +28,7 @@ A thin, SSR-safe React layer over [`@vskstudio/takt-core`](https://www.npmjs.com
 pnpm add @vskstudio/takt-react @vskstudio/takt-core
 ```
 
-Both are peer dependencies: `react` (`^18 || ^19`) and `@vskstudio/takt-core` (`>=0.8.1`).
+Both are peer dependencies: `react` (`^18 || ^19`) and `@vskstudio/takt-core` (`>=0.12.3`).
 
 ## Quick start: provider + hook
 
