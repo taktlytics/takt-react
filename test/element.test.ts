@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { enableSpa, enableOutbound, enableFiles, enableTagged, pageview, createTakt } = vi.hoisted(() => {
+const { enableSpa, enableOutbound, enableFiles, enable404, enableTagged, pageview, createTakt } = vi.hoisted(() => {
   const enableSpa = vi.fn(() => vi.fn())
   const enableOutbound = vi.fn(() => vi.fn())
   const enableFiles = vi.fn(() => vi.fn())
@@ -8,7 +8,7 @@ const { enableSpa, enableOutbound, enableFiles, enableTagged, pageview, createTa
   const enableTagged = vi.fn(() => vi.fn())
   const pageview = vi.fn()
   const createTakt = vi.fn(() => ({ enableSpa, enableOutbound, enableFiles, enable404, enableTagged, pageview }))
-  return { enableSpa, enableOutbound, enableFiles, enableTagged, pageview, createTakt }
+  return { enableSpa, enableOutbound, enableFiles, enable404, enableTagged, pageview, createTakt }
 })
 vi.mock('@vskstudio/takt-core', () => ({ createTakt }))
 
@@ -45,6 +45,59 @@ describe('<takt-analytics> element', () => {
     expect(createTakt).toHaveBeenCalledWith(
       expect.objectContaining({ redactRoutes: ['/verify/[token]', '/reset/:code'] }),
     )
+    el.remove()
+  })
+
+  it('forwards redact-undecodable-paths: only "false" or "0" disable it', () => {
+    defineTaktElement()
+    const el = document.createElement('takt-analytics')
+    el.setAttribute('redact-undecodable-paths', 'false')
+    document.body.appendChild(el)
+    expect(createTakt).toHaveBeenLastCalledWith(expect.objectContaining({ redactUndecodablePaths: false }))
+    el.remove()
+    const zero = document.createElement('takt-analytics')
+    zero.setAttribute('redact-undecodable-paths', '0')
+    document.body.appendChild(zero)
+    expect(createTakt).toHaveBeenLastCalledWith(expect.objectContaining({ redactUndecodablePaths: false }))
+    zero.remove()
+    const absent = document.createElement('takt-analytics')
+    document.body.appendChild(absent)
+    expect(createTakt).toHaveBeenLastCalledWith(expect.objectContaining({ redactUndecodablePaths: true }))
+    absent.remove()
+  })
+
+  it('enables 404 detection when the track-404 attribute is present', () => {
+    defineTaktElement()
+    const elWith = document.createElement('takt-analytics')
+    elWith.setAttribute('track-404', '')
+    document.body.appendChild(elWith)
+    expect(enable404).toHaveBeenCalledOnce()
+    elWith.remove()
+
+    vi.clearAllMocks()
+
+    const elWithout = document.createElement('takt-analytics')
+    document.body.appendChild(elWithout)
+    expect(enable404).not.toHaveBeenCalled()
+    elWithout.remove()
+  })
+
+  it('parses file-extensions as a comma-separated list passed to enableFiles', () => {
+    defineTaktElement()
+    const el = document.createElement('takt-analytics')
+    el.setAttribute('files', '')
+    el.setAttribute('file-extensions', 'pdf, zip ,')
+    document.body.appendChild(el)
+    expect(enableFiles).toHaveBeenCalledWith(['pdf', 'zip'])
+    el.remove()
+  })
+
+  it('ignores file-extensions when files is absent', () => {
+    defineTaktElement()
+    const el = document.createElement('takt-analytics')
+    el.setAttribute('file-extensions', 'pdf')
+    document.body.appendChild(el)
+    expect(enableFiles).not.toHaveBeenCalled()
     el.remove()
   })
 
