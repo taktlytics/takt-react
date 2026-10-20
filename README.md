@@ -247,7 +247,7 @@ export function App() {
 }
 ```
 
-`reactRouterTemplate` joins the `path` of every matched route (`/users/:id`, `/docs/*`), skips index and layout routes without a `path`, and returns `null` when nothing matches. When the resolver returns nothing, `redactRoutes` still applies and the real path is sent otherwise. It reads `router.state.matches` only, so it adds no dependency on `react-router`.
+`reactRouterTemplate` joins the `path` of every matched route (`/users/:id`, `/docs/*`), skips index and layout routes without a `path`, and returns `null` when nothing matches. When the resolver returns nothing, the page is not sent with its real path: a route covered by `redactRoutes` is sent as its pattern, and any other route as `/[redacted]`, without query or hash. In this mode every file download is sent as `/[redacted]` on any host, and every referrer is reduced to its origin. It reads `router.state.matches` only, so it adds no dependency on `react-router`.
 
 ## Public exports
 
