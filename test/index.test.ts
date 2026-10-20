@@ -1,6 +1,14 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import * as api from '../src/index'
-import type { RouteTemplateResolver, TrackOptions } from '../src/index'
+import type { Config, Payload, RouteTemplateResolver, TrackOptions } from '../src/index'
+import type { TaktProps } from '../src/Takt'
+import {
+  normalizeHost as coreNormalizeHost,
+  type Config as CoreConfig,
+  type Payload as CorePayload,
+  type RouteTemplateResolver as CoreRouteTemplateResolver,
+  type TrackOptions as CoreTrackOptions,
+} from '@vskstudio/takt-core'
 
 describe('public API surface', () => {
   it('exports the documented members', () => {
@@ -17,10 +25,20 @@ describe('public API surface', () => {
     expect(typeof api.normalizeHost).toBe('function')
   })
 
-  it('re-exports the route template and track option types from core', () => {
-    const resolver: RouteTemplateResolver = () => '/users/:id'
-    const options: TrackOptions = { props: { plan: 'pro' } }
-    expect(resolver()).toBe('/users/:id')
-    expect(options.props).toEqual({ plan: 'pro' })
+  it('re-exports the core helper by identity', () => {
+    expect(api.normalizeHost).toBe(coreNormalizeHost)
+  })
+
+  it('re-exports core types by identity', () => {
+    expectTypeOf<RouteTemplateResolver>().toEqualTypeOf<CoreRouteTemplateResolver>()
+    expectTypeOf<TrackOptions>().toEqualTypeOf<CoreTrackOptions>()
+    expectTypeOf<Payload>().toEqualTypeOf<CorePayload>()
+    expectTypeOf<Config>().toEqualTypeOf<CoreConfig>()
+    expectTypeOf(api.normalizeHost).toEqualTypeOf(coreNormalizeHost)
+  })
+
+  it('types the redactUndecodablePaths option on the component and on core', () => {
+    expectTypeOf<TaktProps['redactUndecodablePaths']>().toEqualTypeOf<boolean | undefined>()
+    expectTypeOf<Config['redactUndecodablePaths']>().toEqualTypeOf<boolean | undefined>()
   })
 })

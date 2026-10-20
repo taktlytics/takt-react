@@ -6,7 +6,7 @@ export { TaktBadge, type TaktBadgeProps } from './TaktBadge'
 export { TaktEmbed, type TaktEmbedProps } from './TaktEmbed'
 export { reactRouterTemplate, type ReactRouterLike } from './reactRouterTemplate'
 export type { TaktInstance } from './store'
-export type { TrackOptions, RouteTemplateResolver } from '@vskstudio/takt-core'
+export type { TrackOptions, RouteTemplateResolver, Payload } from '@vskstudio/takt-core'
 export type { Config } from '@vskstudio/takt-core'
 
 export { badgeUrl, embedUrl, normalizeHost, createStats, PublicApiError, optOut, optIn, isOptedOut } from '@vskstudio/takt-core'
