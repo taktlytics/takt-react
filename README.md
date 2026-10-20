@@ -87,9 +87,10 @@ export function SignupButton() {
 | `sampleRate`       | `number`                  | `1`                  | Fraction of sessions to track (0 to 1).                           |
 | `trackQuery`       | `boolean`                 | `false`              | Keep the full query string and hash on URLs. Wins over `queryParams`. |
 | `queryParams`      | `string[]`                | n/a | Allowlist applied when `trackQuery` is off: keep only these query params, drop the rest. |
-| `exclude`          | `string[]`                | n/a | Path prefixes never tracked, e.g. `['/app', '/account']` (segment-bounded, checked at send time). |
+| `exclude`          | `string[]`                | n/a | Path prefixes never tracked, e.g. `['/app', '/account']`. Segment-bounded, case-insensitive, trailing slash ignored, matched on the percent-decoded path (`/%61pp` is excluded by `/app`). |
 | `scrubUrl`         | `(url: string) => string` | n/a | Transform the URL before it is sent (page, referrer, and the `url` prop of outbound-link and file-download events). **Component prop only**. Cannot be set as a custom-element attribute. Must be a developer-controlled function; never build it from user input. |
 | `redactRoutes`     | `string[]`                | n/a | Sensitive route patterns: a matching path is sent as the pattern, e.g. `['/verify/[token]', '/reset/:code']`. See [Route redaction](#route-redaction). |
+| `redactUndecodablePaths` | `boolean`           | `true`               | When a route is configured and a path cannot be decoded, send it as `/[redacted]`. `false` decodes it leniently instead, as takt-core-php does. |
 | `routeTemplates`   | `boolean`                 | `false`              | Send every page as its route template instead of the real path. Needs `routeTemplate`. |
 | `routeTemplate`    | `() => string \| null`    | n/a | Returns the current route template, e.g. `reactRouterTemplate(router)`. Used when `routeTemplates` is on. **Component prop only.** |
 | `tagged`           | `boolean`                 | `false`              | Auto-track clicks on `[data-takt-event]` elements; `data-takt-prop-*` attributes become event props. |
@@ -159,11 +160,14 @@ import '@vskstudio/takt-react/element'
 | `enabled`           | boolean  | `enabled`          | Only read when the attribute is present; `"false"`/`"0"` disables tracking. |
 | `track-query`       | boolean  | `trackQuery`       | Only read when the attribute is present.                        |
 | `outbound`          | presence | `outbound`         | Active as soon as the attribute exists.                         |
-| `files`             | presence | `files`            | Active as soon as the attribute exists; extensions cannot be restricted from an attribute. |
+| `redact-undecodable-paths` | boolean | `redactUndecodablePaths` | On by default; only `"false"`/`"0"` disables it.       |
+| `files`             | presence | `files`            | Active as soon as the attribute exists.                         |
+| `file-extensions`   | value    | `files` (extensions) | Comma-separated list, e.g. `file-extensions="pdf,zip"`. Read only when `files` is present. |
+| `track-404`         | presence | `track404`         | Reports a `404` event on error pages.                           |
 | `tagged`            | presence | `tagged`           | Autocapture of `[data-takt-event]` clicks.                      |
 | `debug`             | boolean  | `debug`            | Only read when the attribute is present; logs each payload.     |
 
-The element fires a pageview on `connectedCallback` and disposes every listener it added on `disconnectedCallback`. Some `<Takt>` props have no attribute equivalent: `scrubUrl` (a function), `track404`, and `routeTemplates` / `routeTemplate` (the element has no router).
+The element fires a pageview on `connectedCallback` and disposes every listener it added on `disconnectedCallback`. Some `<Takt>` props have no attribute equivalent: `scrubUrl` and `routeTemplate` (functions), and `routeTemplates` (the element has no router to resolve a template from).
 
 ## Widgets
 
@@ -204,13 +208,15 @@ try {
 
 ## Route redaction
 
-Query strings are stripped by default, but path segments are sent as they are: `/verify/abc123` leaks the token. List the sensitive routes in `redactRoutes` and a matching path is sent as the pattern, while every other page keeps its real path. Patterns accept `[param]`, `[[optional]]`, `[...rest]`, `(group)`, `:param`, `:param?`, `*` and `**`. The rule covers the page URL, same-origin referrers, outbound and download links, and 404 paths.
+Query strings are stripped by default, but path segments are sent as they are: `/verify/abc123` leaks the token. List the sensitive routes in `redactRoutes` and a matching path is sent as the pattern, while every other page keeps its real path. Patterns accept `[param]`, `[[optional]]`, `[...rest]`, `(group)`, `:param`, `:param?`, `*`, `**`, and the brace syntax of takt-core-php: `{param}`, `{param?}` and `{param<regex>}`. The rule covers the page URL, same-origin referrers, outbound and download links, and 404 paths.
 
 ```tsx
 <Takt redactRoutes={['/verify/[token]', '/reset/:code', '/invoices/:id']}>
   <App />
 </Takt>
 ```
+
+Matching is case-insensitive, decodes percent-encoding repeatedly (up to five passes), normalizes dot segments and repeated slashes, and ignores matrix parameters, so `/VERIFY/abc123` matches `/verify/[token]`. A `{param<regex>}` constraint must use the restricted grammar of takt-core: literals, `.`, `\d`, `\w`, `\s` and their negations, character classes, `*`, `+`, `?`, `{n,m}`, top-level alternation, at most 100 characters. A route whose constraint is outside that grammar, or whose matching would cost too much, is never sent as is: every path it matches becomes `/[redacted]`. A path that cannot be decoded is masked the same way when a route is configured. Set `redactUndecodablePaths={false}` (`redact-undecodable-paths="false"` on the element) to decode it leniently instead. When a path is masked, its query string and fragment are dropped too.
 
 This is the recommended setup for Next.js: the App Router exposes no route template on the client, so list the dynamic routes that carry secrets, using the same `[param]` names as your `app/` folders.
 
@@ -250,8 +256,8 @@ From the main entry:
 - Components: `Takt`, `TaktEvent`, `TaktBadge`, `TaktEmbed`
 - Hooks: `useTakt`, `useTaktEvent`
 - Router helper: `reactRouterTemplate`
-- Re-exported from core: `badgeUrl`, `embedUrl`, `createStats`, `PublicApiError`, `optOut`, `optIn`, `isOptedOut`
-- Types: `TaktProps`, `TaktEventParams`, `ReactRouterLike`, `TaktBadgeProps`, `TaktEmbedProps`, `TaktInstance`, plus `Config`, `BadgeOptions`, `EmbedOptions`, `BadgeVariant`, `BadgeGlyph`, `EmbedTheme`, `WidgetLang`, `StatsClient`, `StatsClientOptions`, `StatsParams`, `StatsPeriod`, `StatsDimension`, `StatsMetrics`, `StatsSummary`, `StatsPoint`, `StatsTimeseries`, `StatsBreakdownRow`, `StatsBreakdown`, `StatsRealtime` re-exported from core
+- Re-exported from core: `badgeUrl`, `embedUrl`, `normalizeHost`, `createStats`, `PublicApiError`, `optOut`, `optIn`, `isOptedOut`
+- Types: `TaktProps`, `TaktEventParams`, `ReactRouterLike`, `TaktBadgeProps`, `TaktEmbedProps`, `TaktInstance`, plus `Config`, `TrackOptions`, `RouteTemplateResolver`, `BadgeOptions`, `EmbedOptions`, `BadgeVariant`, `BadgeGlyph`, `EmbedTheme`, `WidgetLang`, `StatsClient`, `StatsClientOptions`, `StatsParams`, `StatsPeriod`, `StatsDimension`, `StatsMetrics`, `StatsSummary`, `StatsPoint`, `StatsTimeseries`, `StatsBreakdownRow`, `StatsBreakdown`, `StatsRealtime` re-exported from core
 
 From `@vskstudio/takt-react/element`: `defineTaktElement()`. Importing the subpath already calls it. The named export is there for explicit or repeated registration (it is idempotent).
 
