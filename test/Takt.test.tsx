@@ -45,6 +45,11 @@ describe('<Takt>', () => {
     )
   })
 
+  it('forwards redactUndecodablePaths to createTakt', () => {
+    render(<Takt redactUndecodablePaths={false}>x</Takt>)
+    expect(createTakt).toHaveBeenCalledWith(expect.objectContaining({ redactUndecodablePaths: false }))
+  })
+
   it('resolves routeTemplate through the latest prop after a rerender', () => {
     const { rerender } = render(<Takt routeTemplates routeTemplate={() => '/first/:id'}>x</Takt>)
     const config = (createTakt.mock.calls[0] as unknown as [{ routeTemplate: () => string | null | undefined }])[0]

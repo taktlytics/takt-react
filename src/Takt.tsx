@@ -36,6 +36,7 @@ export interface TaktProps {
   /** Transform the URL before it is sent; dev-controlled. Never build from user input. */
   scrubUrl?: (url: string) => string
   redactRoutes?: string[]
+  redactUndecodablePaths?: boolean
   routeTemplates?: boolean
   routeTemplate?: () => string | null | undefined
   /** Auto-track `[data-takt-event]` clicks; `data-takt-prop-*` attributes become props. */
@@ -61,6 +62,7 @@ export function Takt({
   exclude,
   scrubUrl,
   redactRoutes,
+  redactUndecodablePaths,
   routeTemplates,
   routeTemplate,
   tagged = false,
@@ -69,8 +71,8 @@ export function Takt({
 }: TaktProps) {
   const [instance, setInstance] = useState<TaktInstance | null>(null)
   // Read the latest props inside the mount effect without re-running it.
-  const props = useRef({ domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, redactRoutes, routeTemplates, routeTemplate, tagged, debug })
-  props.current = { domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, redactRoutes, routeTemplates, routeTemplate, tagged, debug }
+  const props = useRef({ domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, redactRoutes, redactUndecodablePaths, routeTemplates, routeTemplate, tagged, debug })
+  props.current = { domain, endpoint, scriptOrigin, outbound, files, spa, track404, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, redactRoutes, redactUndecodablePaths, routeTemplates, routeTemplate, tagged, debug }
   // Survives StrictMode's setup→cleanup→setup, so the remount boot can tell it
   // is the same component and skip a duplicate initial pageview.
   const didPageview = useRef(false)
@@ -90,6 +92,7 @@ export function Takt({
       exclude: p.exclude,
       scrubUrl: p.scrubUrl,
       redactRoutes: p.redactRoutes,
+      redactUndecodablePaths: p.redactUndecodablePaths,
       routeTemplates: p.routeTemplates,
       routeTemplate: () => props.current.routeTemplate?.(),
       debug: p.debug,
